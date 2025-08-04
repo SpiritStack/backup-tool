@@ -1,0 +1,60 @@
+name: Build Windows
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller==5.13.0
+        pip install -r requirements.txt
+    
+    - name: Clean build directory
+      shell: bash
+      run: |
+        rm -rf dist build
+        mkdir -p dist
+    
+    - name: Build Windows executable
+      run: |
+        pyinstaller --onefile --name backup-tool-windows backup_tool/cli.py
+        mv dist/backup-tool-windows.exe dist/backup-tool.exe
+    
+    - name: Create installer
+      shell: bash
+      run: |
+        choco install nsis -y
+        makensis installer.nsi
+        mv BackupTool-Installer.exe dist/
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: backup-tool-windows
+        path: |
+          dist/backup-tool.exe
+          dist/BackupTool-Installer.exe
+    
+    - name: Create release
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          dist/backup-tool.exe
+          dist/BackupTool-Installer.exe
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
