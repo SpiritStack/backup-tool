@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=42", "wheel", "pyinstaller>=5.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "backup-tool"
+version = "1.0.0"
+description = "A generic backup tool with progress tracking"
+readme = "README.md"
+requires-python = ">=3.7"
+license = {text = "MIT"}
+authors = [
+    {name = "Vikash Sharma", email = "your@email.com"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+[project.scripts]
+backup-tool = "backup_tool.cli:main"
+
+[tool.pyinstaller]
+console-scripts = ["backup-tool=backup_tool.cli:main"]
+onefile = true
+name = "backup-tool"
