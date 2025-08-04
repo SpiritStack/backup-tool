@@ -26,11 +26,21 @@ jobs:
         pip install pyinstaller==5.13.0
         pip install -r requirements.txt
     
+    - name: Clean dist directory
+      run: |
+        rm -rf dist/*
+        mkdir -p dist
+    
     - name: Build executable
       run: |
-        pyinstaller --onefile --name backup-tool-${{ runner.os }} backup_tool/cli.py
-        mkdir dist/backup-tool-${{ runner.os }}
-        mv dist/backup-tool-${{ runner.os }}* dist/backup-tool-${{ runner.os }}/
+        pyinstaller --onefile --name backup-tool backup_tool/cli.py
+        mkdir -p dist/backup-tool-${{ runner.os }}
+        # Handle different OS naming patterns
+        if [ "${{ runner.os }}" = "Windows" ]; then
+          mv dist/backup-tool.exe dist/backup-tool-${{ runner.os }}/
+        else
+          mv dist/backup-tool dist/backup-tool-${{ runner.os }}/
+        fi
     
     # macOS App Bundle Creation
     - name: Create macOS app bundle
@@ -39,12 +49,14 @@ jobs:
         mkdir -p BackupTool.app/Contents/MacOS
         mkdir -p BackupTool.app/Contents/Resources
         cp macos/Info.plist BackupTool.app/Contents/
-        cp dist/backup-tool-macos-latest/backup-tool-macos-latest BackupTool.app/Contents/MacOS/backup-tool
+        cp dist/backup-tool-macos-latest/backup-tool BackupTool.app/Contents/MacOS/backup-tool
         chmod +x BackupTool.app/Contents/MacOS/backup-tool
         
         # Create ZIP package
         mkdir -p dist/backup-tool-macos-app
-        zip -r dist/backup-tool-macos-app/BackupTool.zip BackupTool.app
+        cd dist/backup-tool-macos-app
+        zip -r BackupTool.zip ../../BackupTool.app
+        cd ../..
     
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
@@ -60,7 +72,7 @@ jobs:
       run: |
         choco install nsis -y
         makensis installer.nsi
-        mkdir dist/backup-tool-windows-installer
+        mkdir -p dist/backup-tool-windows-installer
         mv BackupTool-Installer.exe dist/backup-tool-windows-installer/
     
     - name: Upload Windows installer
@@ -84,10 +96,10 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          dist/backup-tool-ubuntu-latest/backup-tool-ubuntu-latest
-          dist/backup-tool-macos-latest/backup-tool-macos-latest
+          dist/backup-tool-ubuntu-latest/backup-tool
+          dist/backup-tool-macos-latest/backup-tool
           dist/backup-tool-macos-app/BackupTool.zip
-          dist/backup-tool-windows-latest/backup-tool-windows-latest.exe
+          dist/backup-tool-windows-latest/backup-tool.exe
           dist/backup-tool-windows-installer/BackupTool-Installer.exe
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
